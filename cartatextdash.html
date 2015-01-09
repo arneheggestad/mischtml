@@ -1,0 +1,143 @@
+<html>
+<head>
+	<title>CARTAtext: Log Analysis Dashboard</title>
+	<script type="text/javascript" src="./js/d3.v3.min.js"></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-1.5.js"></script>
+  <style>
+    .chart div {
+      font: 10px sans-serif;
+      background-color: steelblue;
+      text-align: right;
+      padding: 3px;
+      margin: 1px;
+      color: white;
+    }
+    .fail div {
+      background-color: red;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="summary">
+    <h3>Summary</h3>
+      <ul>
+        <li id="totalReq"></li>
+        <li id="totalUsers"></li>
+        <li id="usageMean"></li>
+        <li id="usageMedian"></li>
+        <li id="usageMax"></li>
+      </ul>
+    </div>
+  <div id="usageScatterplot" class="plot"><h3 align="center">Usage per User</h3></div>
+  <div class="chart" id="successChart"><h3>Request Success</h3></div>
+  <div class="chart fail" id="failChart"><h3>Request Failures</h3></div>
+
+
+  <script type='text/javascript'>
+  // usage plot
+  var w = 800,
+      h = 300,
+      dataset = [],
+      padding = 20;
+
+  // get usage data from the API
+  $(document).ready(function() {
+    $.ajax({
+      type: 'GET',
+      url: 'http://ops.smallbatchdevelopment.com:8080/users/demo',
+      async: false,
+      dataType: 'json',
+      success: function(userObj) {
+        // write summary section
+        $("#totalReq").text("Total Requests: " + userObj.sumUses);
+        $("#totalUsers").text("Total Users: " + userObj.userCount);
+        $("#usageMean").text("Mean Usage: " + userObj.meanUse);
+        $("#usageMedian").text("Median Usage: " + userObj.medianUse);
+        $("#usageMax").text("Max Usage: " + userObj.maxUse);
+        dataset = userObj.usage;
+        //scaling
+        var xScale = d3.scale.linear()
+                             .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+                             .range([padding, w - padding * 2]);
+        var yScale = d3.scale.linear()
+                           .domain([0, d3.max(dataset, function(d) { return d[0]; })])
+                           .range([h - padding, padding]); // invert y-scale so smallest values are at bottom
+
+        //Create SVG element
+        var svg = d3.select("#usageScatterplot")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+        svg.selectAll("circle")
+           .data(dataset)
+           .enter()
+           .append("circle")
+           .attr("cx", function(d) { // number of times user has used the service
+                return xScale(d[1]);
+           })
+           .attr("cy", function(d) { // number of users
+                return yScale(d[0]);
+           })
+           .attr("r", 3);
+
+        // svg.selectAll("text")
+        //    .data(dataset)
+        //    .enter()
+        //    .append("text")
+        //    .text(function(d) {
+        //       return d[1] + "," + d[0];
+        //       })
+        //   .attr("x", function(d) {
+        //       return xScale(d[1]);
+        //       })
+        //   .attr("y", function(d) {
+        //       return yScale(d[0]);
+        //       })
+        //    .attr("font-family", "sans-serif")
+        //    .attr("font-size", "11px")
+        //    .attr("fill", "red");
+      }
+    });
+
+    // success graphs
+    var convoSuccess = {},
+        dataSuccess = [],
+        dataFail = [];
+
+    $.ajax({
+      type: 'GET',
+      url: 'http://ops.smallbatchdevelopment.com:8080/convos/demo',
+      async: false,
+      dataType: 'json',
+      success: function(convoObj) {
+        // write summary section
+        convoSuccess = convoObj.successes;
+        for (var key in convoSuccess) {
+          if (convoSuccess.hasOwnProperty(key)) {
+            dataSuccess.push(convoSuccess[key].success);
+            dataFail.push(convoSuccess[key].fail);
+          }
+        }
+        // convo success/failure graphs
+        d3.select("#successChart")
+          .selectAll("div")
+          .data(dataSuccess)
+        .enter().append("div")
+          .style("width", function(d) { return d * 20 + "px"; })
+          .text(function(d) { return d; });
+        d3.select("#failChart")
+        .selectAll("div")
+          .data(dataFail)
+        .enter().append("div")
+          .style("width", function(d) { return d * 20 + "px"; })
+          .text(function(d) { return d; });
+      }
+    });
+  });
+
+  </script>
+
+</body>
+
+</html>
