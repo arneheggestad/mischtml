@@ -3,6 +3,9 @@
 	<title>CARTAtext: Log Analysis Dashboard</title>
 	<script type="text/javascript" src="./js/d3.v3.min.js"></script>
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.5.js"></script>
+  <!-- Bootstrap resources -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
   <style>
     .chart div {
       font: 10px sans-serif;
@@ -15,31 +18,46 @@
     .fail div {
       background-color: red;
     }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+    }
   </style>
 </head>
 
 <body>
-  <div id="summary">
-    <h3>Summary</h3>
-      <ul>
-        <li id="totalReq"></li>
-        <li id="totalUsers"></li>
-        <li id="usageMean"></li>
-        <li id="usageMedian"></li>
-        <li id="usageMax"></li>
-      </ul>
-    </div>
-  <div id="usageScatterplot" class="plot"><h3 align="center">Usage per User</h3></div>
-  <div class="chart" id="successChart"><h3>Request Success</h3></div>
-  <div class="chart fail" id="failChart"><h3>Request Failures</h3></div>
-
-
+  <div class="container">
+    <div id="summary" class="col-md-4">
+      <h3 class="text-center">Summary</h3>
+        <ul>
+          <li id="totalReq"></li>
+          <li id="totalUsers"></li>
+          <li id="usageMean"></li>
+          <li id="usageMedian"></li>
+          <li id="usageMax"></li>
+        </ul>
+      </div>
+    <div class="chart col-md-4" id="successChart">
+      <h3 class="text-center">Successes</h3></div>
+    <div class="chart fail col-md-4" id="failChart">
+      <h3 class="text-center">Failures</h3></div>
+  </div>
+  <div id="usageScatterplot" class="plot container"><h3 align="center">Usage per User</h3></div>
+  
   <script type='text/javascript'>
   // usage plot
   var w = 800,
       h = 300,
       dataset = [],
-      padding = 20;
+      padding = 30;
 
   // get usage data from the API
   $(document).ready(function() {
@@ -63,6 +81,18 @@
         var yScale = d3.scale.linear()
                            .domain([0, d3.max(dataset, function(d) { return d[0]; })])
                            .range([h - padding, padding]); // invert y-scale so smallest values are at bottom
+
+        // define x-axis
+        var xAxis = d3.svg.axis()
+                          .scale(xScale)
+                          .orient("bottom")
+                          .ticks(10);
+
+        // define y-axis
+        var yAxis = d3.svg.axis()
+                          .scale(yScale)
+                          .orient("left")
+                          .ticks(10);
 
         //Create SVG element
         var svg = d3.select("#usageScatterplot")
@@ -97,6 +127,18 @@
         //    .attr("font-family", "sans-serif")
         //    .attr("font-size", "11px")
         //    .attr("fill", "red");
+
+        // create x-axis
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(0," + (h - padding) + ")")
+            .call(xAxis);
+
+        // create y-axis
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + padding + ",0)")
+            .call(yAxis);
       }
     });
 
